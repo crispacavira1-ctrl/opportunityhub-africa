@@ -1,9 +1,13 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
   const links = [
     { to: '/', label: 'Início' },
@@ -11,6 +15,12 @@ export default function Navbar() {
     { to: '/about', label: 'Sobre' },
     { to: '/contact', label: 'Contacto' },
   ]
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    setIsOpen(false)
+    navigate('/')
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -30,12 +40,30 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              to="/login"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              Entrar
-            </Link>
+
+            {user ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  Sair
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                Entrar
+              </Link>
+            )}
           </div>
 
           <button
@@ -59,13 +87,32 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              to="/login"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-center"
-              onClick={() => setIsOpen(false)}
-            >
-              Entrar
-            </Link>
+
+            {user ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="text-gray-700 hover:text-blue-600"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-center"
+                >
+                  Sair
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-center"
+                onClick={() => setIsOpen(false)}
+              >
+                Entrar
+              </Link>
+            )}
           </div>
         )}
       </nav>

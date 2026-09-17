@@ -1,19 +1,54 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 export default function Login() {
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInError) {
+      setError('Email ou palavra-passe incorretos.')
+      setLoading(false)
+      return
+    }
+
+    setLoading(false)
+    navigate('/dashboard')
+  }
+
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
         Entrar na sua conta
       </h1>
 
-      <form className="space-y-4">
+      {error && (
+        <p className="text-red-600 text-sm mb-4 text-center">{error}</p>
+      )}
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email
           </label>
           <input
             type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:border-blue-500"
             placeholder="seu@email.com"
           />
@@ -25,6 +60,9 @@ export default function Login() {
           </label>
           <input
             type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:border-blue-500"
             placeholder="••••••••"
           />
@@ -32,9 +70,10 @@ export default function Login() {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white rounded-lg py-2 font-medium hover:bg-blue-700 transition-colors"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white rounded-lg py-2 font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          Entrar
+          {loading ? 'A entrar...' : 'Entrar'}
         </button>
       </form>
 
