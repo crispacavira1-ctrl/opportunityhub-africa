@@ -1,43 +1,44 @@
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-
-const demoOpportunities: Record<string, {
-  title: string
-  type: string
-  location: string
-  deadline: string
-  description: string
-}> = {
-  '1': {
-    title: 'Bolsa de Mestrado em Engenharia — Universidade de Lisboa',
-    type: 'Bolsas',
-    location: 'Portugal',
-    deadline: '2026-11-30',
-    description:
-      'Bolsa que cobre propinas e alojamento para estudantes africanos admitidos no programa de Mestrado em Engenharia. Inclui apoio para deslocação inicial.',
-  },
-  '2': {
-    title: 'Estágio em Desenvolvimento Web — TechHub Windhoek',
-    type: 'Estágios',
-    location: 'Namíbia',
-    deadline: '2026-10-15',
-    description:
-      'Estágio remunerado de 6 meses para estudantes ou recém-formados em áreas de tecnologia, com foco em desenvolvimento frontend e backend.',
-  },
-  '3': {
-    title: 'Programa de Jovens Profissionais — Banco Africano de Desenvolvimento',
-    type: 'Empregos',
-    location: 'Costa do Marfim',
-    deadline: '2026-12-01',
-    description:
-      'Programa de dois anos para jovens profissionais africanos, com rotação por diferentes departamentos do banco.',
-  },
-}
+import { supabase } from '../lib/supabase'
+import type { Opportunity } from '../types/opportunity'
 
 export default function OpportunityDetails() {
   const { id } = useParams()
-  const opportunity = id ? demoOpportunities[id] : undefined
+  const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!opportunity) {
+  useEffect(() => {
+    async function fetchOpportunity() {
+      if (!id) return
+
+      const { data, error } = await supabase
+        .from('opportunities')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        setError('Oportunidade não encontrada.')
+      } else {
+        setOpportunity(data as Opportunity)
+      }
+      setLoading(false)
+    }
+
+    fetchOpportunity()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-gray-500">
+        A carregar...
+      </div>
+    )
+  }
+
+  if (error || !opportunity) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -59,7 +60,7 @@ export default function OpportunityDetails() {
         ← Voltar às oportunidades
       </Link>
 
-      <span className="inline-block text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full mb-3">
+      <span className="inline-block text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full mb-3 capitalize">
         {opportunity.type}
       </span>
 
@@ -69,18 +70,33 @@ export default function OpportunityDetails() {
 
       <div className="flex gap-6 text-sm text-gray-500 mb-6">
         <span>{opportunity.location}</span>
-        <span>
-          Prazo: {new Date(opportunity.deadline).toLocaleDateString('pt-PT')}
-        </span>
+        {opportunity.deadline && (
+          <span>
+            Prazo: {new Date(opportunity.deadline).toLocaleDateString('pt-PT')}
+          </span>
+        )}
       </div>
 
       <p className="text-gray-700 leading-relaxed mb-8">
         {opportunity.description}
       </p>
 
-      <button className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-        Candidatar-me
-      </button>
+      {opportunity.external_url && (
+        <a
+          href={opportunity.external_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          Candidatar-me
+        </a>
+      )}
+
+      {!opportunity.external_url && (
+        <button className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+          Candidatar-me
+        </button>
+      )}
     </div>
   )
 }
